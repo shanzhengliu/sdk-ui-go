@@ -94,6 +94,7 @@ func addVersionItem(item *systray.MenuItem, title string, version string, parent
 						v.MenuItem.Uncheck()
 					} else {
 						item.Check()
+						item.SetTitle(version + "[Installed]")
 					}
 				}
 			case <-uninstallItem.ClickedCh:
