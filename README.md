@@ -2,16 +2,22 @@
 This project is a system tray application for SDKMan in Mac OS. 
 
 ## Technologies
-### GoLang: 1.22.4  
-### SDKMan: 5.18.2
-### Systray Library: 1.2.2
+```GoLang```: 1.22.4  
+```SDKMan```: 5.18.2  
+```Systray```: 1.2.2  
 
 ## Installation
 
-### Step 1: Download the Application from Release Page in This Repository
-### Step 2: Unzip the Application
-### Step 3: Move the Application to Applications Folder
-### Step 4: Open the Application
+### Step 1 
+Download the Application from Release Page in This Repository  
+
+### Step 2 
+Unzip the Application  
+
+### Step 3 
+Move the Application to Applications Folder
+### Step 4 
+Open the Application
 
 
 ## Note
@@ -29,6 +35,13 @@ for example, you can select the `Java` vendor and click `Install && Use` to the 
 If the version has been installed, the `[installed]`will show up after the version. meanwhile, you can open the home folder via this tool.
 
 ![image1](./img/function-demo.jpg)
+
+## Demo  
+
+
+https://github.com/shanzhengliu/sdkman-ui-go/assets/19382187/7683fe9d-46b6-4238-a4c3-ec6a366b8c01
+
+
 
 
 
