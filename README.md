@@ -30,10 +30,5 @@ If the version has been installed, the `[installed]`will show up after the versi
 
 ![image1](./img/function-demo.jpg)
 
-## Demo
-<video width="540" height="300" controls>
-  <source src="./demo.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
 
 
