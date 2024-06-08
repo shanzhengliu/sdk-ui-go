@@ -20,6 +20,8 @@ type VersionMenu struct {
 }
 
 func main() {
+	version, _ := internal.SDKManVersion(sdkmanInitScript)
+	fmt.Println("SDKMan Version: ", version)
 	systray.Run(OnReady, onExit)
 }
 
@@ -28,6 +30,8 @@ func OnReady() {
 	systray.SetTitle("SDK UI")
 	systray.SetTooltip("SDK UI")
 	internal.InstallSDKMan()
+	sdkmanUpdateItem := systray.AddMenuItem("SDKMan Update", "")
+	systray.AddSeparator()
 	candidate := internal.CandidateList(sdkmanInitScript)
 	var wg sync.WaitGroup
 
@@ -47,6 +51,8 @@ func OnReady() {
 			select {
 			case <-mQuit.ClickedCh:
 				systray.Quit()
+			case <-sdkmanUpdateItem.ClickedCh:
+				internal.SDKManUpdate(sdkmanInitScript)
 			}
 		}
 	}()
@@ -86,10 +92,9 @@ func addVersionItem(item *systray.MenuItem, title string, version string, instal
 	installItem := item.AddSubMenuItem("Install && Use", "")
 	uninstallItem := item.AddSubMenuItem("Uninstall", "")
 	openHomeItem := item.AddSubMenuItem("Open Home", "")
-	if install {
-		installItem.Hide()
-	} else {
+	if install == false {
 		uninstallItem.Hide()
+		openHomeItem.Hide()
 	}
 	go func() {
 		for {
@@ -106,7 +111,7 @@ func addVersionItem(item *systray.MenuItem, title string, version string, instal
 				}
 				openHomeItem.Show()
 				uninstallItem.Show()
-				installItem.Hide()
+				installItem.Show()
 
 			case <-uninstallItem.ClickedCh:
 				internal.UninstallCandidate(title, version, sdkmanInitScript)

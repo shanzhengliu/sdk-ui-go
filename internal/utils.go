@@ -2,8 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,24 +16,12 @@ type Candidate struct {
 	Identifier string
 }
 
-func VersionList(candidate string, os string) []string {
-	resp, err := http.Get("https://api.sdkman.io/2/candidates/" + candidate + "/" + os + "/versions/all")
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	return strings.Split(string(body), ",")
-}
-
 func JavaVersionList(scriptPath string) []Candidate {
 	args := []string{"-c", "source " + scriptPath + " && sdk list java"}
 	cmd := exec.Command("bash", args...)
 	out, err := cmd.Output()
 	if err != nil {
+		fmt.Println(args)
 		fmt.Println("Error running command:", err)
 		return nil
 
@@ -60,10 +46,6 @@ func JavaVersionList(scriptPath string) []Candidate {
 			javaVersions = append(javaVersions, versionInfo)
 		}
 	}
-	for _, version := range javaVersions {
-		fmt.Println(version)
-
-	}
 	return javaVersions
 }
 
@@ -72,6 +54,7 @@ func OtherVersionList(candidate string, scriptPath string) []Candidate {
 	cmd := exec.Command("bash", args...)
 	out, err := cmd.Output()
 	if err != nil {
+		fmt.Println(args)
 		fmt.Println("Error running command:", err)
 		return nil
 	}
@@ -111,6 +94,7 @@ func OpenCandidateFolder(candidate string, version, scriptPath string) error {
 	cmd := exec.Command("bash", args...)
 	out, err := cmd.Output()
 	if err != nil {
+		fmt.Println(args)
 		fmt.Println("Error running command:", err)
 		return nil
 	}
@@ -123,6 +107,7 @@ func CandidateList(scriptPath string) []string {
 	cmd := exec.Command("bash", args...)
 	out, err := cmd.Output()
 	if err != nil {
+		fmt.Println(args)
 		fmt.Println("Error running command:", err)
 		return nil
 	}
@@ -132,7 +117,7 @@ func CandidateList(scriptPath string) []string {
 	// Slice to hold the install commands
 	var installCommands []string
 
-	// Iterate over the lines and extract the install commands
+	// Iterate over the lines and extract the installation commands
 	for _, line := range lines {
 		matches := re.FindStringSubmatch(line)
 		if len(matches) > 1 {
@@ -148,6 +133,7 @@ func UseCandidate(candidate string, version string, scriptPath string) error {
 	cmd := exec.Command("bash", args...)
 	err := cmd.Run()
 	if err != nil {
+		fmt.Println(args)
 		fmt.Println("Error running command:", err)
 		return err
 	}
@@ -161,6 +147,7 @@ func UninstallCandidate(candidate string, version string, scriptPath string) err
 	cmd := exec.Command("bash", args...)
 	err := cmd.Run()
 	if err != nil {
+		fmt.Println(args)
 		fmt.Println("Error running command:", err)
 		return err
 	}
@@ -212,5 +199,27 @@ func InstallSDKMan() error {
 	}
 
 	fmt.Println("SDKMan installed successfully")
+	return nil
+}
+
+func SDKManVersion(scriptPath string) (string, error) {
+	cmd := exec.Command("bash", "-c", "source "+scriptPath+" && sdk version")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Error running command: %v\nOutput: %s\n", err, string(output))
+		return "", err
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+func SDKManUpdate(scriptPath string) error {
+	cmd := exec.Command("bash", "-c", "source "+scriptPath+" && sdk update")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Error running command: %v\nOutput: %s\n", err, string(output))
+		return err
+	}
+
 	return nil
 }
