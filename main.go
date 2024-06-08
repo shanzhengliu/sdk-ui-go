@@ -21,12 +21,13 @@ type VersionMenu struct {
 
 func main() {
 	systray.Run(OnReady, onExit)
-
 }
 
 func OnReady() {
 	systray.SetIcon(icon.Data)
 	systray.SetTitle("SDK UI")
+	systray.SetTooltip("SDK UI")
+	internal.InstallSDKMan()
 	candidate := internal.CandidateList(sdkmanInitScript)
 	var wg sync.WaitGroup
 
@@ -76,14 +77,20 @@ func addSubMenu(item *systray.MenuItem, title string) {
 
 		versionItem := item.AddSubMenuItemCheckbox(subItem, "", v.Use)
 		versionMenu = append(versionMenu, VersionMenu{MenuItem: versionItem, Title: title})
-		addVersionItem(versionItem, title, v.Identifier, item)
+		addVersionItem(versionItem, title, v.Identifier, v.Install)
 	}
 	candidate[title] = versionMenu
 }
 
-func addVersionItem(item *systray.MenuItem, title string, version string, parentItem *systray.MenuItem) {
+func addVersionItem(item *systray.MenuItem, title string, version string, install bool) {
 	installItem := item.AddSubMenuItem("Install && Use", "")
 	uninstallItem := item.AddSubMenuItem("Uninstall", "")
+	openHomeItem := item.AddSubMenuItem("Open Home", "")
+	if install {
+		installItem.Hide()
+	} else {
+		uninstallItem.Hide()
+	}
 	go func() {
 		for {
 			select {
@@ -97,20 +104,22 @@ func addVersionItem(item *systray.MenuItem, title string, version string, parent
 						item.SetTitle(version + "[Installed]")
 					}
 				}
+				openHomeItem.Show()
+				uninstallItem.Show()
+				installItem.Hide()
+
 			case <-uninstallItem.ClickedCh:
 				internal.UninstallCandidate(title, version, sdkmanInitScript)
 				item.SetTitle(version)
+				uninstallItem.Hide()
+				openHomeItem.Hide()
+				installItem.Show()
+
+			case <-openHomeItem.ClickedCh:
+				internal.OpenCandidateFolder(title, version, sdkmanInitScript)
+
 			}
+
 		}
 	}()
 }
-
-//func getIcon(s string) []byte {
-//	// Read your icon file here
-//	// For example, load from a file:
-//	file, err := os.ReadFile(s)
-//	if err != nil {
-//		panic(err)
-//	}
-//	return file
-//}

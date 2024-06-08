@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -100,11 +103,19 @@ func OtherVersionList(candidate string, scriptPath string) []Candidate {
 		}
 	}
 
-	for _, info := range versionInfos {
-		fmt.Println(info)
-	}
-
 	return versionInfos
+}
+
+func OpenCandidateFolder(candidate string, version, scriptPath string) error {
+	args := []string{"-c", "source " + scriptPath + " && sdk home " + candidate + " " + version}
+	cmd := exec.Command("bash", args...)
+	out, err := cmd.Output()
+	if err != nil {
+		fmt.Println("Error running command:", err)
+		return nil
+	}
+	openFolder(strings.TrimSpace(string(out)))
+	return nil
 }
 
 func CandidateList(scriptPath string) []string {
@@ -154,5 +165,52 @@ func UninstallCandidate(candidate string, version string, scriptPath string) err
 		return err
 	}
 	fmt.Println("Installed", candidate, version)
+	return nil
+}
+
+func openFolder(path string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	case "linux":
+		cmd = exec.Command("xdg-open", path)
+	default:
+		return fmt.Errorf("unsupported platform")
+	}
+
+	return cmd.Start()
+}
+
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
+func InstallSDKMan() error {
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		return fmt.Errorf("HOME environment variable is not set")
+	}
+
+	sdkManPath := filepath.Join(homeDir, ".sdkman")
+	if FileExists(sdkManPath) {
+		fmt.Println("SDKMan already installed")
+		return nil
+	}
+
+	cmd := exec.Command("bash", "-c", "curl -s \"https://get.sdkman.io\" | bash")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Error running command: %v\nOutput: %s\n", err, string(output))
+		return err
+	}
+
+	fmt.Println("SDKMan installed successfully")
 	return nil
 }
