@@ -11,12 +11,6 @@ import (
 	"strings"
 )
 
-type Candidate struct {
-	Use        bool
-	Install    bool
-	Identifier string
-}
-
 func JavaVersionList(scriptPath string) []Candidate {
 	args := []string{"-c", "source " + scriptPath + " && sdk list java"}
 	cmd := exec.Command("bash", args...)

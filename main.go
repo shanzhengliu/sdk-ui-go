@@ -28,6 +28,7 @@ func OnReady() {
 	systray.SetTitle("SDK")
 	systray.SetTooltip("SDK UI")
 	internal.InstallSDKMan()
+	internal.InstallNVM()
 	candidate := internal.CandidateList(sdkmanInitScript)
 
 	var wg sync.WaitGroup
@@ -47,8 +48,23 @@ func OnReady() {
 	}
 	wg.Wait()
 	systray.AddSeparator()
+	nodeItem := systray.AddMenuItem("node", "")
+	candidateMenuItemMap["node[nvm]"] = nodeItem
+	nodeVersionList := internal.NodeVersionList()
+	for _, v := range nodeVersionList {
+		subItem := v.Identifier
+		if v.Install {
+			subItem = subItem + "[Installed]"
+		} else {
+			subItem = subItem + ""
+		}
+		nodeItem.AddSubMenuItemCheckbox(subItem, "", v.Use)
+	}
+
+	systray.AddSeparator()
 	mSDKManVersion := systray.AddMenuItem("SDKMan Version", "Version")
 	sdkmanUpdateItem := systray.AddMenuItem("SDKMan Update", "Update")
+
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
 
 	go func() {
