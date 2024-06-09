@@ -60,8 +60,7 @@ func OtherVersionList(candidate string, scriptPath string) []Candidate {
 	}
 
 	lines := strings.Split(string(out), "\n")
-
-	re := regexp.MustCompile(`([>*\s]*)\s*(\d+\.\d+(\.\d+)?(-beta-\d+)?)`)
+	re := regexp.MustCompile(`([>*\s]*)\s*(\d+\.\d+(\.\d+)?(-beta-\d+)?(_\d+)?)`)
 
 	var versionInfos []Candidate
 
@@ -142,8 +141,8 @@ func UseCandidate(candidate string, version string, scriptPath string) error {
 }
 
 func UninstallCandidate(candidate string, version string, scriptPath string) error {
-	fmt.Println("Installing", candidate, version)
-	args := []string{"-c", "source " + scriptPath + " && sdk uninstall " + candidate + " " + version + " && sdk use " + candidate + " " + version}
+	fmt.Println("UnInstalling", candidate, version)
+	args := []string{"-c", "source " + scriptPath + " && sdk uninstall " + candidate + " " + version}
 	cmd := exec.Command("bash", args...)
 	err := cmd.Run()
 	if err != nil {

@@ -114,6 +114,9 @@ func addVersionItem(item *systray.MenuItem, title string, version string, instal
 				installItem.Show()
 
 			case <-uninstallItem.ClickedCh:
+				if item.Checked() {
+					return
+				}
 				internal.UninstallCandidate(title, version, sdkmanInitScript)
 				item.SetTitle(version)
 				uninstallItem.Hide()
