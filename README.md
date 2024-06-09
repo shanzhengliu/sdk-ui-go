@@ -1,10 +1,11 @@
 ## Introduction  
-This project is a system tray application for SDKMan in Mac OS. 
+This project is a system tray application for SDKMan && NVM in Mac OS. 
 
 ## Technologies
 ```GoLang```: 1.22.4  
 ```SDKMan```: 5.18.2  
 ```Systray```: 1.2.2  
+```NVM```: 0.39.7
 
 ## Installation
 

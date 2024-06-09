@@ -17,8 +17,7 @@ var (
 func InstallNVM() {
 	// Install NVM
 	NVMEnvWrite()
-	cmd := exec.Command("bash", "-c", defaultNvmEnv+"&&nvm --version")
-	out, err := cmd.Output()
+	out, err := CommandExec([]string{defaultNvmEnv + "&& nvm --version"})
 	if err != nil {
 		fmt.Println("Error running command:", err)
 		fmt.Println("Installing NVM")
@@ -49,7 +48,7 @@ func NVMEnvWrite() {
 			defer file.Close()
 
 			if !containsNvmEnv(configFilePath) {
-				// 添加配置内容到文件末尾
+
 				if _, err := file.WriteString("\n" + defaultNvmEnv + "\n"); err != nil {
 					fmt.Printf("Error writing to %s: %v\n", configFilePath, err)
 				} else {
@@ -87,32 +86,28 @@ func containsNvmEnv(filePath string) bool {
 
 func NodeVersionList() []Candidate {
 	// List Node versions
-	cmd := exec.Command("bash", "-c", defaultNvmEnv+"&& nvm ls-remote |cat -v ")
-	out, err := cmd.Output()
 	var candidates []Candidate
-
+	out, err := CommandExec([]string{defaultNvmEnv + "&& nvm ls-remote"})
 	if err != nil {
-		fmt.Println("Error running command:", err)
-		return nil
+		return candidates
 	}
-	lines := strings.Split(string(out), "\n")
+	lines := strings.Split(out, "\n")
+	installedMap := NodeLocalInstallList()
 	for _, line := range lines {
-		regexPattern := `\b(v[0-9]+\.[0-9]+\.[0-9]+|iojs-v[0-9]+\.[0-9]+\.[0-9]+)\b`
+		regexPattern := `\b(v[0-9]+\.[0-9]+\.[0-9]+)\b`
 		re := regexp.MustCompile(regexPattern)
 		var candidate Candidate
-		if strings.Contains(line, "0;34m") {
-			candidate.Install = true
-		}
-		if strings.Contains(line, `0;32m->`) {
-			candidate.Use = true
-			candidate.Install = true
-		}
 		matches := re.FindAllString(line, -1)
 		if len(matches) == 0 {
 			continue
 		}
 		for _, match := range matches {
-			candidate.Identifier = match
+			if _, ok := installedMap[match]; ok {
+				candidate = installedMap[match]
+			} else {
+				candidate.Identifier = match
+				candidate.Install = false
+			}
 		}
 
 		candidates = append(candidates, candidate)
@@ -120,34 +115,55 @@ func NodeVersionList() []Candidate {
 	return candidates
 }
 
-func OpenNodeFolder(version string) error {
-	cmd := exec.Command("bash", "-c", defaultNvmEnv+"&& nvm which "+version)
-	out, err := cmd.Output()
-	if err != nil {
-		fmt.Println("Error running command:", err)
-		return nil
-	}
-	out = []byte(strings.ReplaceAll(string(out), "/bin/node", ""))
-	openFolder(strings.TrimSpace(string(out)))
-	return nil
+func OpenNodeFolder(version string) {
+	out, _ := CommandExec([]string{defaultNvmEnv + "&& nvm which " + version})
+	out = strings.ReplaceAll(out, "/bin/node", "")
+	openFolder(strings.TrimSpace(out))
 }
 
 func InstallNode(version string) {
-	cmd := exec.Command("bash", "-c", defaultNvmEnv+"&& nvm install "+version+" && nvm alias node default "+version)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println("Error running command:", err)
-	}
+	fmt.Println("Installing Node version", version)
+	_, _ = CommandExec([]string{defaultNvmEnv + "&& nvm install " + version + " && nvm alias default " + version})
+	fmt.Println("Installed Node version", version)
 }
 
 func UninstallNode(version string) {
-	cmd := exec.Command("bash", "-c", defaultNvmEnv+"&& nvm uninstall "+version)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	fmt.Println("Uninstalling Node version", version)
+	_, _ = CommandExec([]string{defaultNvmEnv + "&& nvm uninstall " + version})
+	fmt.Println("Uninstalled Node version", version)
+}
+
+func NVMVersion() string {
+	out, err := CommandExec([]string{defaultNvmEnv + "&& nvm --version"})
 	if err != nil {
-		fmt.Println("Error running command:", err)
+		return ""
 	}
+	return strings.TrimSpace(out)
+}
+
+func NodeLocalInstallList() map[string]Candidate {
+	var installCandidates = make(map[string]Candidate)
+	out, _ := CommandExec([]string{defaultNvmEnv + "&& nvm ls node"})
+	lines := strings.Split(out, "\n")
+	for _, line := range lines {
+		var candidate Candidate
+
+		regexPattern := `\b(v[0-9]+\.[0-9]+\.[0-9]+)\b`
+		re := regexp.MustCompile(regexPattern)
+		matches := re.FindAllString(line, -1)
+		if len(matches) == 0 {
+			continue
+		}
+		for _, match := range matches {
+			candidate.Identifier = match
+			candidate.Install = true
+		}
+		if strings.Contains(line, `->`) {
+			candidate.Use = true
+		}
+		if candidate.Identifier != "" {
+			installCandidates[candidate.Identifier] = candidate
+		}
+	}
+	return installCandidates
 }

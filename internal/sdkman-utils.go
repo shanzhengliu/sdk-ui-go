@@ -12,19 +12,13 @@ import (
 )
 
 func JavaVersionList(scriptPath string) []Candidate {
-	args := []string{"-c", "source " + scriptPath + " && sdk list java"}
-	cmd := exec.Command("bash", args...)
-	out, err := cmd.Output()
-	if err != nil {
-		fmt.Println(args)
-		fmt.Println("Error running command:", err)
-		return nil
-
-	}
-	lines := strings.Split(string(out), "\n")
-
 	var javaVersions []Candidate
-
+	out, err := CommandExec([]string{"source " + scriptPath + " && sdk list java"})
+	if err != nil {
+		fmt.Println("Error running command:", err)
+		return javaVersions
+	}
+	lines := strings.Split(out, "\n")
 	for _, line := range lines {
 
 		if strings.Contains(line, "====") || strings.Contains(line, "----") || strings.Contains(line, "Vendor") {
@@ -45,16 +39,9 @@ func JavaVersionList(scriptPath string) []Candidate {
 }
 
 func OtherVersionList(candidate string, scriptPath string) []Candidate {
-	args := []string{"-c", "source " + scriptPath + " && sdk list " + candidate}
-	cmd := exec.Command("bash", args...)
-	out, err := cmd.Output()
-	if err != nil {
-		fmt.Println(args)
-		fmt.Println("Error running command:", err)
-		return nil
-	}
 
-	lines := strings.Split(string(out), "\n")
+	out, _ := CommandExec([]string{"source " + scriptPath + " && sdk list " + candidate})
+	lines := strings.Split(out, "\n")
 	re := regexp.MustCompile(`([>*\s]*)\s*(\d+\.\d+(\.\d+)?(-beta-\d+)?(_\d+)?(-\w+)?(-\w+)?)`)
 
 	var versionInfos []Candidate
@@ -86,29 +73,14 @@ func OtherVersionList(candidate string, scriptPath string) []Candidate {
 	return versionInfos
 }
 
-func OpenCandidateFolder(candidate string, version, scriptPath string) error {
-	args := []string{"-c", "source " + scriptPath + " && sdk home " + candidate + " " + version}
-	cmd := exec.Command("bash", args...)
-	out, err := cmd.Output()
-	if err != nil {
-		fmt.Println(args)
-		fmt.Println("Error running command:", err)
-		return nil
-	}
-	openFolder(strings.TrimSpace(string(out)))
-	return nil
+func OpenCandidateFolder(candidate string, version, scriptPath string) {
+	out, _ := CommandExec([]string{"source " + scriptPath + " && sdk home " + candidate + " " + version})
+	openFolder(strings.TrimSpace(out))
 }
 
 func CandidateList(scriptPath string) []string {
-	args := []string{"-c", "source " + scriptPath + " && sdk list"}
-	cmd := exec.Command("bash", args...)
-	out, err := cmd.Output()
-	if err != nil {
-		fmt.Println(args)
-		fmt.Println("Error running command:", err)
-		return nil
-	}
-	lines := strings.Split(string(out), "\n")
+	out, _ := CommandExec([]string{"source " + scriptPath + " && sdk list"})
+	lines := strings.Split(out, "\n")
 	re := regexp.MustCompile(`\$ sdk install (\S+)`)
 
 	// Slice to hold the install commands
@@ -124,32 +96,20 @@ func CandidateList(scriptPath string) []string {
 	return installCommands
 }
 
-func UseCandidate(candidate string, version string, scriptPath string) error {
+func UseCandidate(candidate string, version string, scriptPath string) {
 	fmt.Println("Installing", candidate, version)
-	args := []string{"-c", "source " + scriptPath + " && sdk install " + candidate + " " + version + " && sdk default " + candidate + " " + version}
-	cmd := exec.Command("bash", args...)
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println(args)
-		fmt.Println("Error running command:", err)
-		return err
+	_, err := CommandExec([]string{"source " + scriptPath + " && sdk install " + candidate + " " + version + " && sdk default " + candidate + " " + version})
+	if err == nil {
+		fmt.Println("Installed", candidate, version)
 	}
-	fmt.Println("Installed", candidate, version)
-	return nil
 }
 
-func UninstallCandidate(candidate string, version string, scriptPath string) error {
+func UninstallCandidate(candidate string, version string, scriptPath string) {
 	fmt.Println("UnInstalling", candidate, version)
-	args := []string{"-c", "source " + scriptPath + " && sdk uninstall " + candidate + " " + version}
-	cmd := exec.Command("bash", args...)
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println(args)
-		fmt.Println("Error running command:", err)
-		return err
+	_, err := CommandExec([]string{"source " + scriptPath + " && sdk uninstall " + candidate + " " + version})
+	if err == nil {
+		fmt.Println("UnInstalled", candidate, version)
 	}
-	fmt.Println("Installed", candidate, version)
-	return nil
 }
 
 func openFolder(path string) error {
@@ -188,13 +148,11 @@ func InstallSDKMan() error {
 		return nil
 	}
 	beeep.Notify("SDKMan Installation", "SDKMan is not installed, Installing SDKMan", "")
-	cmd := exec.Command("bash", "-c", "curl -s \"https://get.sdkman.io\" | bash")
-	output, err := cmd.CombinedOutput()
+	output, err := CommandExec([]string{"curl -s \"https://get.sdkman.io\" | bash"})
 	if err != nil {
 		fmt.Printf("Error running command: %v\nOutput: %s\n", err, string(output))
 		return err
 	}
-
 	fmt.Println("SDKMan installed successfully")
 	beeep.Notify("SDKMan Installation", "SDKMan installed successfully", "")
 	return nil

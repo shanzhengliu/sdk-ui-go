@@ -48,23 +48,15 @@ func OnReady() {
 	}
 	wg.Wait()
 	systray.AddSeparator()
-	nodeItem := systray.AddMenuItem("node", "")
-	candidateMenuItemMap["node[nvm]"] = nodeItem
-	nodeVersionList := internal.NodeVersionList()
-	for _, v := range nodeVersionList {
-		subItem := v.Identifier
-		if v.Install {
-			subItem = subItem + "[Installed]"
-		} else {
-			subItem = subItem + ""
-		}
-		nodeItem.AddSubMenuItemCheckbox(subItem, "", v.Use)
-	}
+
+	nvmSubMenu()
 
 	systray.AddSeparator()
-	mSDKManVersion := systray.AddMenuItem("SDKMan Version", "Version")
-	sdkmanUpdateItem := systray.AddMenuItem("SDKMan Update", "Update")
-
+	mSDKManVersion := systray.AddMenuItem("SDKMan Version", "")
+	sdkmanUpdateItem := systray.AddMenuItem("SDKMan Update", "")
+	systray.AddSeparator()
+	nvmVersionItem := systray.AddMenuItem("NVM Version", "")
+	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
 
 	go func() {
@@ -77,8 +69,11 @@ func OnReady() {
 				internal.SDKManUpdate(sdkmanInitScript)
 				beeep.Notify("SDKMan Update", "SDKMan has updated", "")
 			case <-mSDKManVersion.ClickedCh:
-				beeep.Notify("SDKMan Version", internal.SDKManVersion(sdkmanInitScript), "SDKMan Version")
+				beeep.Notify("SDKMan Version", internal.SDKManVersion(sdkmanInitScript), "")
+			case <-nvmVersionItem.ClickedCh:
+				beeep.Notify("NVM Version", internal.NVMVersion(), "")
 			}
+
 		}
 	}()
 
@@ -97,7 +92,7 @@ func addSubMenu(item *systray.MenuItem, title string) {
 	} else {
 		versions = internal.OtherVersionList(title, sdkmanInitScript)
 	}
-
+	versions = internal.SortCandidates(versions)
 	for _, v := range versions {
 		subItem := v.Identifier
 		if v.Install {
@@ -157,6 +152,72 @@ func addVersionItem(item *systray.MenuItem, title string, version string, instal
 
 			}
 
+		}
+	}()
+}
+
+func nvmSubMenu() {
+	nodeItem := systray.AddMenuItem("node", "")
+	nodeVersionList := internal.NodeVersionList()
+	var versionMenu []VersionMenu
+	nodeVersionList = internal.SortCandidates(nodeVersionList)
+	for _, v := range nodeVersionList {
+		subItem := v.Identifier
+		if v.Install {
+			subItem = subItem + "[Installed]"
+		} else {
+			subItem = subItem + ""
+		}
+		versionItem := nodeItem.AddSubMenuItemCheckbox(subItem, "", v.Use)
+		versionMenu = append(versionMenu, VersionMenu{MenuItem: versionItem, Title: "node[nvm]"})
+		AddNodeVersionItem(versionItem, "node[nvm]", v.Identifier, v.Install)
+	}
+	candidate["node[nvm]"] = versionMenu
+
+}
+
+func AddNodeVersionItem(item *systray.MenuItem, title string, version string, install bool) {
+	installItem := item.AddSubMenuItem("Install && Use", "")
+	uninstallItem := item.AddSubMenuItem("Uninstall", "")
+	openHomeItem := item.AddSubMenuItem("Open Home", "")
+	if install == false {
+		uninstallItem.Hide()
+		openHomeItem.Hide()
+	}
+	go func() {
+		for {
+			select {
+			case <-installItem.ClickedCh:
+				beeep.Notify("Install", "Verify Installation of "+title+" "+version, "")
+				internal.InstallNode(version)
+				beeep.Notify("Install", title+" "+version+" has installed and Using", "")
+				for _, v := range candidate["node[nvm]"] {
+					if v.MenuItem != item {
+						v.MenuItem.Uncheck()
+					} else {
+						item.Check()
+						item.SetTitle(version + "[Installed]")
+					}
+				}
+				openHomeItem.Show()
+				uninstallItem.Show()
+				installItem.Show()
+
+			case <-uninstallItem.ClickedCh:
+				if item.Checked() {
+					return
+				}
+				beeep.Notify("Uninstall", "Uninstalling "+title+" "+version, "")
+				internal.UninstallNode(version)
+				beeep.Notify("Uninstall", title+" "+version+" has removed", "")
+				item.SetTitle(version)
+				uninstallItem.Hide()
+				openHomeItem.Hide()
+				installItem.Show()
+
+			case <-openHomeItem.ClickedCh:
+				internal.OpenNodeFolder(version)
+			}
 		}
 	}()
 }
