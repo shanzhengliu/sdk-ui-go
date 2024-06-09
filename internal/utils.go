@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"github.com/gen2brain/beeep"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,11 +61,14 @@ func OtherVersionList(candidate string, scriptPath string) []Candidate {
 	}
 
 	lines := strings.Split(string(out), "\n")
-	re := regexp.MustCompile(`([>*\s]*)\s*(\d+\.\d+(\.\d+)?(-beta-\d+)?(_\d+)?)`)
+	re := regexp.MustCompile(`([>*\s]*)\s*(\d+\.\d+(\.\d+)?(-beta-\d+)?(_\d+)?(-\w+)?(-\w+)?)`)
 
 	var versionInfos []Candidate
 
 	for _, line := range lines {
+		if strings.Contains(line, "====") || strings.Contains(line, "----") || strings.Contains(line, "Vendor") {
+			continue
+		}
 		matches := re.FindAllStringSubmatch(line, -1)
 		for _, match := range matches {
 			status := strings.TrimSpace(match[1])
@@ -189,7 +193,7 @@ func InstallSDKMan() error {
 		fmt.Println("SDKMan already installed")
 		return nil
 	}
-
+	beeep.Notify("SDKMan Installation", "SDKMan is not installed, Installing SDKMan", "")
 	cmd := exec.Command("bash", "-c", "curl -s \"https://get.sdkman.io\" | bash")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -198,18 +202,19 @@ func InstallSDKMan() error {
 	}
 
 	fmt.Println("SDKMan installed successfully")
+	beeep.Notify("SDKMan Installation", "SDKMan installed successfully", "")
 	return nil
 }
 
-func SDKManVersion(scriptPath string) (string, error) {
+func SDKManVersion(scriptPath string) string {
 	cmd := exec.Command("bash", "-c", "source "+scriptPath+" && sdk version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("Error running command: %v\nOutput: %s\n", err, string(output))
-		return "", err
+		return ""
 	}
 
-	return strings.TrimSpace(string(output)), nil
+	return strings.TrimSpace(string(output))
 }
 
 func SDKManUpdate(scriptPath string) error {

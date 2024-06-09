@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gen2brain/beeep"
 	"github.com/getlantern/systray"
 	"github.com/getlantern/systray/example/icon"
 	"sdk-ui-go/internal"
@@ -20,8 +21,6 @@ type VersionMenu struct {
 }
 
 func main() {
-	version, _ := internal.SDKManVersion(sdkmanInitScript)
-	fmt.Println("SDKMan Version: ", version)
 	systray.Run(OnReady, onExit)
 }
 
@@ -30,29 +29,40 @@ func OnReady() {
 	systray.SetTitle("SDK UI")
 	systray.SetTooltip("SDK UI")
 	internal.InstallSDKMan()
-	sdkmanUpdateItem := systray.AddMenuItem("SDKMan Update", "")
-	systray.AddSeparator()
 	candidate := internal.CandidateList(sdkmanInitScript)
+
 	var wg sync.WaitGroup
+	var candidateMenuItemMap = make(map[string]*systray.MenuItem)
+	for _, c := range candidate {
+		item := systray.AddMenuItem(c, c)
+		candidateMenuItemMap[c] = item
+	}
 
 	for _, c := range candidate {
 		wg.Add(1)
 		go func(c string) {
 			defer wg.Done()
-			item := systray.AddMenuItem(c, c)
+			item := candidateMenuItemMap[c]
 			addSubMenu(item, c)
 		}(c)
 	}
 	wg.Wait()
 	systray.AddSeparator()
+	mSDKManVersion := systray.AddMenuItem("SDKMan Version", "Version")
+	sdkmanUpdateItem := systray.AddMenuItem("SDKMan Update", "Update")
 	mQuit := systray.AddMenuItem("Quit", "Quit the whole app")
+
 	go func() {
 		for {
 			select {
 			case <-mQuit.ClickedCh:
 				systray.Quit()
 			case <-sdkmanUpdateItem.ClickedCh:
+				beeep.Notify("SDKMan Update", "SDKMan is updating", "")
 				internal.SDKManUpdate(sdkmanInitScript)
+				beeep.Notify("SDKMan Update", "SDKMan has updated", "")
+			case <-mSDKManVersion.ClickedCh:
+				beeep.Notify("SDKMan Version", internal.SDKManVersion(sdkmanInitScript), "SDKMan Version")
 			}
 		}
 	}()
@@ -100,7 +110,9 @@ func addVersionItem(item *systray.MenuItem, title string, version string, instal
 		for {
 			select {
 			case <-installItem.ClickedCh:
+				beeep.Notify("Install", "Verify Installation of "+title+" "+version, "")
 				internal.UseCandidate(title, version, sdkmanInitScript)
+				beeep.Notify("Install", title+" "+version+" has installed and Using", "")
 				for _, v := range candidate[title] {
 					if v.MenuItem != item {
 						v.MenuItem.Uncheck()
@@ -117,7 +129,9 @@ func addVersionItem(item *systray.MenuItem, title string, version string, instal
 				if item.Checked() {
 					return
 				}
+				beeep.Notify("Uninstall", "Uninstalling "+title+" "+version, "")
 				internal.UninstallCandidate(title, version, sdkmanInitScript)
+				beeep.Notify("Uninstall", title+" "+version+" has removed", "")
 				item.SetTitle(version)
 				uninstallItem.Hide()
 				openHomeItem.Hide()
