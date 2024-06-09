@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gen2brain/beeep"
 	"github.com/getlantern/systray"
-	"github.com/getlantern/systray/example/icon"
 	"sdk-ui-go/internal"
 	"strings"
 	"sync"
@@ -25,8 +24,8 @@ func main() {
 }
 
 func OnReady() {
-	systray.SetIcon(icon.Data)
-	systray.SetTitle("SDK UI")
+	systray.SetIcon(internal.Icon)
+	systray.SetTitle("SDK")
 	systray.SetTooltip("SDK UI")
 	internal.InstallSDKMan()
 	candidate := internal.CandidateList(sdkmanInitScript)
