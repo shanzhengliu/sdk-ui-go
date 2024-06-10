@@ -13,6 +13,7 @@ type Candidate struct {
 	Use        bool
 	Install    bool
 	Identifier string
+	Custom     bool
 }
 
 func parseVersion(identifier string) (int, int, int, error) {
