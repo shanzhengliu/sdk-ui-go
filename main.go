@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gen2brain/beeep"
 	"github.com/getlantern/systray"
+	"github.com/ncruces/zenity"
 	"sdk-ui-go/internal"
 	"strings"
 	"sync"
@@ -69,9 +70,9 @@ func OnReady() {
 				internal.SDKManUpdate(sdkmanInitScript)
 				beeep.Notify("SDKMan Update", "SDKMan has updated", "")
 			case <-mSDKManVersion.ClickedCh:
-				beeep.Notify("SDKMan Version", internal.SDKManVersion(sdkmanInitScript), "")
+				zenity.Info(internal.SDKManVersion(sdkmanInitScript), zenity.Title("SDKMan Version"))
 			case <-nvmVersionItem.ClickedCh:
-				beeep.Notify("NVM Version", internal.NVMVersion(), "")
+				zenity.Info(internal.NVMVersion(), zenity.Title("NVM Version"))
 			}
 
 		}
