@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"github.com/gen2brain/beeep"
+	"github.com/ncruces/zenity"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -178,4 +179,36 @@ func SDKManUpdate(scriptPath string) error {
 	}
 
 	return nil
+}
+
+func AddCustomCandidate(candidate string, scriptPath string) string {
+	id, err := zenity.Entry(`Please enter your custom ID for your `+candidate, zenity.Title("ID Input"))
+	if err != nil {
+		err := zenity.Warning("No ID entered or an error occurred:")
+		if err != nil {
+			return ""
+		}
+		return ""
+	}
+	folder, err := zenity.Entry(`Please enter your absolute home path for your `+candidate, zenity.Title("Folder Input"))
+	if err != nil {
+		err := zenity.Warning("No folder selected or an error occurred:")
+		fmt.Println("No folder selected or an error occurred:", err)
+		return ""
+	}
+	//check folder exists
+	if !FileExists(folder) {
+		err := zenity.Warning("Folder does not exist")
+		if err != nil {
+			return ""
+		}
+		return ""
+	}
+	_, err = CommandExec([]string{"source " + scriptPath + " && sdk install " + candidate + " " + id + " " + folder})
+	if err != nil {
+		zenity.Warning("Installed Failed for " + candidate + id + "with folder " + folder)
+		fmt.Println("Installed Failed for " + candidate + id + "with folder " + folder)
+		return ""
+	}
+	return id
 }

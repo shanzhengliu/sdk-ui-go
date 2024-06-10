@@ -34,7 +34,7 @@ func OnReady() {
 	var wg sync.WaitGroup
 	var candidateMenuItemMap = make(map[string]*systray.MenuItem)
 	for _, c := range candidate {
-		item := systray.AddMenuItem(c, c)
+		item := systray.AddMenuItem(c, "")
 		candidateMenuItemMap[c] = item
 	}
 
@@ -79,11 +79,6 @@ func OnReady() {
 
 }
 
-func onExit() {
-	// Clean up here
-	fmt.Println("Exiting")
-}
-
 func addSubMenu(item *systray.MenuItem, title string) {
 	var versions []internal.Candidate
 	var versionMenu []VersionMenu
@@ -93,6 +88,21 @@ func addSubMenu(item *systray.MenuItem, title string) {
 		versions = internal.OtherVersionList(title, sdkmanInitScript)
 	}
 	versions = internal.SortCandidates(versions)
+	addCustomItem := item.AddSubMenuItem("+ local "+title, "")
+	go func() {
+		for {
+			select {
+			case <-addCustomItem.ClickedCh:
+				id := internal.AddCustomCandidate(title, sdkmanInitScript)
+				if id != "" {
+					customItem := item.AddSubMenuItem(id+"[Installed]", "")
+					candidate[title] = append(candidate[title], VersionMenu{MenuItem: customItem, Title: title})
+					addVersionItem(customItem, title, id, true)
+				}
+			}
+		}
+	}()
+
 	for _, v := range versions {
 		subItem := v.Identifier
 		if v.Install {
@@ -220,4 +230,9 @@ func AddNodeVersionItem(item *systray.MenuItem, title string, version string, in
 			}
 		}
 	}()
+}
+
+func onExit() {
+	// clean up here
+	fmt.Println("Exiting...")
 }
