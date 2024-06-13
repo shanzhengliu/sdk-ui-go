@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+var defaultSDKManEnv = `export SDKMAN_DIR="$HOME/.sdkman" && [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"`
+
 func JavaVersionList(scriptPath string) []Candidate {
 	var javaVersions []Candidate
 	out, err := CommandExec([]string{"source " + scriptPath + " && sdk list java"})
@@ -142,7 +144,7 @@ func InstallSDKMan() error {
 	if homeDir == "" {
 		return fmt.Errorf("HOME environment variable is not set")
 	}
-
+	EnvWrite(defaultSDKManEnv, "sdkman", "export SDKMAN_DIR")
 	sdkManPath := filepath.Join(homeDir, ".sdkman")
 	if FileExists(sdkManPath) {
 		fmt.Println("SDKMan already installed")

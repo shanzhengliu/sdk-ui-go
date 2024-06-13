@@ -1,8 +1,11 @@
 package internal
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -79,4 +82,57 @@ func CommandExec(commands []string) (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+func containsEnv(filePath string, env string) bool {
+	file, err := os.Open(filePath)
+	if err != nil {
+		fmt.Printf("Error opening %s: %v\n", filePath, err)
+		return false
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if strings.Contains(scanner.Text(), env) {
+			return true
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("Error reading %s: %v\n", filePath, err)
+	}
+	return false
+}
+
+func EnvWrite(defaultEnvScript string, provider string, env string) {
+	shellConfigFiles := []string{".bashrc", ".zshrc", ".profile"}
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Printf("Error getting user home directory: %v\n", err)
+		return
+	}
+
+	for _, configFile := range shellConfigFiles {
+		configFilePath := filepath.Join(homeDir, configFile)
+		if _, err := os.Stat(configFilePath); err == nil {
+			file, err := os.OpenFile(configFilePath, os.O_APPEND|os.O_WRONLY, 0644)
+			if err != nil {
+				fmt.Printf("Error opening %s: %v\n", configFilePath, err)
+				continue
+			}
+			defer file.Close()
+
+			if !containsEnv(configFilePath, env) {
+				if _, err := file.WriteString("\n" + defaultEnvScript + "\n"); err != nil {
+					fmt.Printf("Error writing to %s: %v\n", configFilePath, err)
+				} else {
+					fmt.Printf("Updated %s\n", configFilePath)
+				}
+			} else {
+				fmt.Printf("%s already contains"+provider+" settings, skipping...\n", configFilePath)
+			}
+		} else {
+			fmt.Printf("%s does not exist, skipping...\n", configFilePath)
+		}
+	}
 }

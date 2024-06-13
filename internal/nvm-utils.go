@@ -1,11 +1,8 @@
 package internal
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -16,7 +13,7 @@ var (
 
 func InstallNVM() {
 	// Install NVM
-	NVMEnvWrite()
+	EnvWrite(defaultNvmEnv, "NVM", "export NVM_DIR")
 	out, err := CommandExec([]string{defaultNvmEnv + "&& nvm --version"})
 	if err != nil {
 		fmt.Println("Error running command:", err)
@@ -27,61 +24,6 @@ func InstallNVM() {
 		return
 	}
 	fmt.Println("NVM is already installed", string(out))
-}
-
-func NVMEnvWrite() {
-	shellConfigFiles := []string{".bashrc", ".zshrc", ".profile"}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Printf("Error getting user home directory: %v\n", err)
-		return
-	}
-
-	for _, configFile := range shellConfigFiles {
-		configFilePath := filepath.Join(homeDir, configFile)
-		if _, err := os.Stat(configFilePath); err == nil {
-			file, err := os.OpenFile(configFilePath, os.O_APPEND|os.O_WRONLY, 0644)
-			if err != nil {
-				fmt.Printf("Error opening %s: %v\n", configFilePath, err)
-				continue
-			}
-			defer file.Close()
-
-			if !containsNvmEnv(configFilePath) {
-
-				if _, err := file.WriteString("\n" + defaultNvmEnv + "\n"); err != nil {
-					fmt.Printf("Error writing to %s: %v\n", configFilePath, err)
-				} else {
-					fmt.Printf("Updated %s\n", configFilePath)
-				}
-			} else {
-				fmt.Printf("%s already contains NVM settings, skipping...\n", configFilePath)
-			}
-		} else {
-			fmt.Printf("%s does not exist, skipping...\n", configFilePath)
-		}
-	}
-}
-
-// 检查配置文件是否包含 defaultNvmEnv
-func containsNvmEnv(filePath string) bool {
-	file, err := os.Open(filePath)
-	if err != nil {
-		fmt.Printf("Error opening %s: %v\n", filePath, err)
-		return false
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), "export NVM_DIR") {
-			return true
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading %s: %v\n", filePath, err)
-	}
-	return false
 }
 
 func NodeVersionList() []Candidate {
